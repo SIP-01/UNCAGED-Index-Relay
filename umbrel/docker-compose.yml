@@ -1,0 +1,92 @@
+# Umbrel app package docker-compose for the UNCAGED Index Relay.
+#
+# Lives inside the umbrel/ package dir next to umbrel-app.yml (Umbrel expects
+# docker-compose.yml by that exact name within the app package).
+#
+# - Umbrel's $APP_* variables (hidden service, data dir) are injected.
+# - Data persists under $APP_DATA_DIR across updates/reinstalls.
+# - The relay signing key auto-generates on first run (docker-entrypoint.sh)
+#   and is persisted in the relay data volume — no manual key setup needed.
+# - An init service fixes volume ownership on first start (OpenSearch refuses
+#   to run as root; Umbrel bind-mounts data dirs root-owned).
+
+services:
+  # One-shot: chown the bind-mounted data dirs to uid 1000 (OpenSearch's
+  # opensearch user and Bun's bun user are both uid 1000 in their images).
+  init-permissions:
+    image: alpine:3
+    restart: "no"
+    volumes:
+      - ${APP_DATA_DIR}:/data
+    command: chown -R 1000:1000 /data
+
+  opensearch:
+    image: opensearchproject/opensearch:2
+    restart: on-failure
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
+    environment:
+      - discovery.type=single-node
+      # Disable the security plugin on the internal container network; the
+      # search backend is NOT exposed to the host — only the relay talks to it.
+      - plugins.security.disabled=true
+      # Umbrel boxes range from small ARM SBCs to big x86 towers. 1g is a
+      # safe floor for a personal index; raise it for serious crawl load.
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - NO_PROXY=*
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - ${APP_DATA_DIR}/opensearch:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 90s
+
+  relay:
+    image: ghcr.io/nostrdanish/uncaged-index-relay:latest
+    # For a local build instead of the registry image, replace the line above
+    # with: build: { context: .., dockerfile: Dockerfile }
+    restart: on-failure
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
+      opensearch:
+        condition: service_healthy
+    environment:
+      # The relay's own URL as clients address it. Default: LAN. If you
+      # serve the relay to the outside world via the Tor hidden service,
+      # set RELAY_URL/PUBLIC_URL to its ws form, e.g.
+      #   ws://<your-onion-address>.onion/
+      # (Umbrel exposes the onion address on the app's page.)
+      RELAY_URL: ${RELAY_URL:-ws://umbrel.local:13131/}
+      PUBLIC_URL: ${PUBLIC_URL:-http://umbrel.local:13131/}
+      PORT: "13131"
+      IP_HEADER: "X-Forwarded-For"
+      # Signing key: auto-generated and persisted by docker-entrypoint.sh on
+      # the relay data volume when NOSTR_NSEC is unset.
+      RELAY_DATA_DIR: /app/data
+      # Index scope advertisement (defaults: global general-purpose index).
+      UNCAGED_DOMAINS: ${UNCAGED_DOMAINS:-*}
+      UNCAGED_SCOPE: ${UNCAGED_SCOPE:-global}
+      UNCAGED_LANGUAGES: ${UNCAGED_LANGUAGES:-}
+      UNCAGED_DOC_TYPES: ${UNCAGED_DOC_TYPES:-}
+      OPENSEARCH_NODE: http://opensearch:9200
+      OPENSEARCH_INDEX: nostr-events
+      # One-line JSON logs; info keeps Umbrel logs readable, debug is verbose.
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "13131:13131"
+    volumes:
+      - ${APP_DATA_DIR}/relay:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:13131/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

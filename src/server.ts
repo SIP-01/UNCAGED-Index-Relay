@@ -204,6 +204,17 @@ const server = serve<WebSocketData>({
         });
       }
 
+      // Liveness probe: process is up and serving. Deliberately does NOT
+      // depend on OpenSearch (the search backend has its own healthcheck in
+      // docker-compose; coupling liveness to it would cause restart loops
+      // while OpenSearch restarts). Container orchestrators (Umbrel,
+      // docker healthcheck) poll this.
+      if (url.pathname === "/healthz") {
+        return new Response("ok\n", {
+          headers: { "Content-Type": "text/plain" },
+        });
+      }
+
       // Prometheus metrics endpoint: merge this thread's exposition with
       // every protocol worker's.
       if (url.pathname === "/metrics") {

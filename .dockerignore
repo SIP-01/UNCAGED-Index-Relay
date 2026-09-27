@@ -1,0 +1,14 @@
+node_modules
+.git
+.env
+.env.*
+!.env.example
+dist
+*.log
+README.md
+AGENTS.md
+docs
+umbrel
+docker-compose*.yml
+Dockerfile
+.dockerignore

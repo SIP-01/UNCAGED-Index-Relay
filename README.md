@@ -400,7 +400,7 @@ All options:
 ### Prerequisites
 
 - OpenSearch 2.x or compatible service
-- Bun runtime
+- Bun runtime (or Docker — see below)
 
 ### Start the relay
 
@@ -411,6 +411,18 @@ bun start
 # Development mode with auto-reload
 bun dev
 ```
+
+### Docker / Umbrel
+
+```bash
+# All-in-one (relay + OpenSearch, data persisted in named volumes,
+# signing key auto-generated on first run)
+docker compose up -d
+```
+
+For **Umbrel**, the `umbrel/` directory is a complete app package — see
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for one-command installation and
+the host setup note (`vm.max_map_count`) that OpenSearch needs.
 
 ### Running in Cluster Mode
 
@@ -446,10 +458,9 @@ This relay implements NIP-01 (Basic protocol flow) via WebSocket at `/`.
 
 ### HTTP Endpoints
 
+- `GET /healthz` — Liveness probe (container orchestrators, load balancers)
 - `GET /` — Landing page (or the WebSocket upgrade / NIP-11 document, based on
   headers)
-- `GET /` with `Accept: application/nostr+json` — NIP-11 relay information
-  document
 - `GET /metrics` — Prometheus metrics
 
 ## Supported Filters

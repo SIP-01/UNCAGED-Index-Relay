@@ -1,0 +1,50 @@
+manifestVersion: 1
+id: uncaged-index-relay
+category: networking
+name: UNCAGED Index Relay
+version: "1.0.0"
+tagline: The decentralized web search index for Nostr (SIP-01, kind 39697)
+description: >-
+  A high-performance Nostr search-index relay backed by OpenSearch, native to
+  SIP-01 web index observations. Crawlers (Crawlstr and others) publish
+  signed observations of web pages; this relay validates, indexes, and serves
+  them; and independent search engines (0xSearchstr, 0xPresearchstr, UNCAGED
+  Engine) query and rank the shared index however they choose.
+
+
+  Anyone can crawl. Anyone can publish. Anyone can run an index relay.
+  Anyone can replicate an index. Nobody owns the index.
+
+
+  On top of the search index, it is a complete general-purpose Nostr relay
+  (NIP-01/09/11/13/40/42/45/50/62/70/77), so it works as your everyday relay
+  too. Index relays federate via NIP-77 Negentropy sync — no central master.
+
+
+  Point crawlers and search engines at ws://umbrel.local:13131 (or, if you
+  expose the app via your Umbrel Tor hidden service, its ws://…onion/ URL —
+  see the app repo's DEPLOYMENT.md) and you are part of the decentralized
+  search index. A relay signing key is generated on first run and persisted in
+  the app data dir; your OpenSearch index data survives updates and
+  reinstalls.
+
+  Note for low-memory devices: OpenSearch wants vm.max_map_count >= 262144
+  and benefits from at least 4 GB RAM. See the app repo's DEPLOYMENT.md for
+  the one-line sysctl fix if OpenSearch fails its bootstrap check.
+developer: NostrDanish
+website: https://github.com/NostrDanish/UNCAGED-Index-Relay
+repo: https://github.com/NostrDanish/UNCAGED-Index-Relay
+support: https://github.com/NostrDanish/UNCAGED-Index-Relay/issues
+submission: https://github.com/getumbrel/umbrel-apps/pull/1
+port: 13131
+dependencies: []
+path: ""
+gallery:
+  - 1.jpg
+  - 2.jpg
+  - 3.jpg
+releaseNotes: >-
+  First Umbrel release. SIP-01 v1.1 native ingestion and validation, NIP-50
+  web-search operators (site:, domain:, topic:, before:, …), NIP-77 index
+  federation, NIP-11 uncaged_index capability advertisement, first_seen_at
+  relay-local provenance, automatic signing-key generation on first run.
