@@ -21,6 +21,7 @@ import { StorageOverloaded } from "./errors.ts";
 import type {
   FromIndexerWorker,
   IndexerBatch,
+  IndexerPortReady,
   IndexerReply,
   IndexerRequest,
   ToIndexerWorker,
@@ -192,6 +193,9 @@ function attachPort(port: MessagePort): void {
   // Explicit start is required for reliable MessagePort delivery across Bun
   // worker implementations, including ports wired during worker startup.
   port.start();
+  // The protocol worker queues writes until this handshake arrives. This
+  // prevents early writes from being lost while the receiver is attaching.
+  port.postMessage({ t: "ready" } satisfies IndexerPortReady);
 }
 
 // ---------------------------------------------------------------------------
