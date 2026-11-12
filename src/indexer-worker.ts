@@ -189,6 +189,9 @@ function attachPort(port: MessagePort): void {
       handle(item);
     }
   };
+  // Explicit start is required for reliable MessagePort delivery across Bun
+  // worker implementations, including ports wired during worker startup.
+  port.start();
 }
 
 // ---------------------------------------------------------------------------
