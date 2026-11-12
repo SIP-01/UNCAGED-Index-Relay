@@ -51,6 +51,14 @@ export interface IndexerReplyBatch {
   items: IndexerReply[];
 }
 
+/** Sent only after the indexer worker has installed its port handler. */
+export interface IndexerPortReady {
+  t: "ready";
+}
+
+/** Messages received by a protocol worker on its dedicated indexer port. */
+export type IndexerPortMessage = IndexerPortReady | IndexerReplyBatch;
+
 /** Messages sent from the main thread to the indexer worker. */
 export type ToIndexerWorker =
   | { t: "port"; port: MessagePort }
@@ -75,6 +83,7 @@ interface PendingWrite {
 
 export class IndexerClient {
   private port: MessagePort | null = null;
+  private portReady = false;
   private pending = new Map<number, PendingWrite>();
   private nextReqId = 0;
   private queue: IndexerRequest[] = [];
@@ -104,14 +113,23 @@ export class IndexerClient {
         pending.reject(new Error("indexer restarted, write lost"));
       }
       this.pending.clear();
+      // Do not replay writes whose acknowledgement was lost with the old
+      // indexer. They were rejected above and must not be sent to its peer.
+      this.queue = [];
       this.port.close();
     }
     this.port = port;
+    this.portReady = false;
     // Note: untyped param — Bun and undici both declare a global
     // MessageEvent and they disagree; let TS infer from the setter.
     port.onmessage = (event) => {
-      const batch = event.data as IndexerReplyBatch;
-      for (const item of batch.items) {
+      const message = event.data as IndexerPortMessage;
+      if (message.t === "ready") {
+        this.portReady = true;
+        this.flush();
+        return;
+      }
+      for (const item of message.items) {
         const pending = this.pending.get(item.reqId);
         if (!pending) continue;
         this.pending.delete(item.reqId);
@@ -132,7 +150,6 @@ export class IndexerClient {
     // Start explicitly so Bun and browser-style MessagePort implementations
     // deliver transferred indexer replies consistently after worker respawns.
     port.start();
-    this.flush();
   }
 
   /** Index an event (resolves once the indexer's bulk flush confirms it). */
@@ -177,7 +194,7 @@ export class IndexerClient {
 
   private flush(): void {
     this.flushScheduled = false;
-    if (!this.port || this.queue.length === 0) return;
+    if (!this.port || !this.portReady || this.queue.length === 0) return;
     this.port.postMessage({
       t: "batch",
       items: this.queue,
