@@ -129,6 +129,7 @@ function attachPort(port: MessagePort): void {
         flushScheduled = false;
         if (replies.length > 0) {
           port.postMessage({ t: "replies", items: replies });
+          console.log("[indexer-worker] sending replies", replies.length);
           replies = [];
         }
       });
@@ -158,6 +159,7 @@ function attachPort(port: MessagePort): void {
   }
 
   function handle(item: IndexerRequest): void {
+    console.log("[indexer-worker] handling request", item.t, item.reqId);
     switch (item.t) {
       case "index":
         // event() can throw StorageOverloaded synchronously (bulk queue
@@ -186,6 +188,7 @@ function attachPort(port: MessagePort): void {
   // and they disagree; let TS infer from the setter.
   port.onmessage = (event) => {
     const batch = event.data as IndexerBatch;
+    console.log("[indexer-worker] received batch", batch.items.length);
     for (const item of batch.items) {
       handle(item);
     }
@@ -196,6 +199,7 @@ function attachPort(port: MessagePort): void {
   // The protocol worker queues writes until this handshake arrives. This
   // prevents early writes from being lost while the receiver is attaching.
   port.postMessage({ t: "ready" } satisfies IndexerPortReady);
+  console.log("[indexer-worker] port ready sent");
 }
 
 // ---------------------------------------------------------------------------
