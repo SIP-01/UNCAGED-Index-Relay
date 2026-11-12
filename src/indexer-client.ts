@@ -129,6 +129,9 @@ export class IndexerClient {
         }
       }
     };
+    // Start explicitly so Bun and browser-style MessagePort implementations
+    // deliver transferred indexer replies consistently after worker respawns.
+    port.start();
     this.flush();
   }
 
