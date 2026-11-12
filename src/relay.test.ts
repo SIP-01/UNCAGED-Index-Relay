@@ -1096,12 +1096,12 @@ describe("Relay", () => {
         "#i": [url],
       }]);
 
-      assert.deepEqual(captured, [{
-        kinds: [17],
-        "#k": ["web"],
-        "#i": [url],
-        limit: 100,
-      }]);
+      assert.equal(captured.length, 1);
+      assert.deepEqual(captured[0].kinds, [17]);
+      assert.deepEqual(captured[0]["#k"], ["web"]);
+      assert.deepEqual(captured[0]["#i"], [url]);
+      assert.equal(captured[0].limit, 100);
+      assert.equal(typeof captured[0].until, "number");
       assert.equal(sentMessages[0][0], "EVENT");
       assert.deepEqual(sentMessages[sentMessages.length - 1], ["EOSE", "web-reactions"]);
     });
@@ -1130,8 +1130,8 @@ describe("Relay", () => {
       relay.flushBroadcasts();
 
       assert.equal(sentMessages.length, 2);
-      assert.deepEqual(sentMessages[0], ["EVENT", "live-web-reactions", event]);
-      assert.deepEqual(sentMessages[1], ["OK", event.id, true, ""]);
+      assert.deepEqual(sentMessages[0], ["OK", event.id, true, ""]);
+      assert.deepEqual(sentMessages[1], ["EVENT", "live-web-reactions", event]);
     });
   });
 
