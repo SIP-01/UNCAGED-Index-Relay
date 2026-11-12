@@ -81,8 +81,12 @@ export class ProtocolPool {
   private workers: Worker[];
   /** Resolves with the worker's relayInfo once it posts "ready". */
   private workerReady: Promise<NostrRelayInfo>[];
+  /** True only after each protocol worker has installed its message handler. */
+  private workerStarted: boolean[];
   /** The single indexer worker owning all OpenSearch writes. */
   private indexer!: Worker;
+  /** True only after the indexer worker has installed its message handler. */
+  private indexerIsReady = false;
   /** Resolves once the indexer posts "ready". */
   private indexerReady!: Promise<void>;
   /** Set once dispose() runs, so "close" events stop triggering respawns. */
@@ -152,6 +156,7 @@ export class ProtocolPool {
     this.queues = Array.from({ length: size }, () => []);
     this.workers = new Array(size);
     this.workerReady = new Array(size);
+    this.workerStarted = new Array(size).fill(false);
 
     // The indexer must exist before protocol workers so each spawnWorker
     // can wire its MessageChannel to it.
@@ -190,6 +195,7 @@ export class ProtocolPool {
       this.workerEnv ? { env: this.workerEnv } : undefined,
     );
     this.workers[workerIndex] = worker;
+    this.workerStarted[workerIndex] = false;
 
     let markReady: (info: NostrRelayInfo) => void = () => {};
     let markFailed: (err: Error) => void = () => {};
@@ -207,7 +213,13 @@ export class ProtocolPool {
       const msg = event.data;
       switch (msg.t) {
         case "ready":
+          // The worker posts ready only after installing self.onmessage.
+          // Transfer the dedicated indexer port now, not during construction:
+          // Bun can drop transferred-port messages sent before the listener
+          // exists, even though later ordinary worker messages are queued.
+          this.workerStarted[workerIndex] = true;
           markReady(msg.relayInfo);
+          if (this.indexerIsReady) this.connectIndexer(workerIndex);
           break;
         case "frames":
           for (const [connId, frame] of msg.frames) {
@@ -254,7 +266,6 @@ export class ProtocolPool {
       this.handleWorkerDeath(workerIndex);
     });
 
-    this.connectIndexer(workerIndex);
   }
 
   /**
@@ -309,6 +320,7 @@ export class ProtocolPool {
 
   /** Spawn (or respawn, after a crash) the indexer worker. */
   private spawnIndexer(): void {
+    this.indexerIsReady = false;
     const indexerUrl = new URL("indexer-worker.ts", import.meta.url).href;
     const indexer = new Worker(
       indexerUrl,
@@ -329,7 +341,14 @@ export class ProtocolPool {
       const msg = event.data;
       switch (msg.t) {
         case "ready":
+          // Both sides must have installed their message handlers before a
+          // MessagePort is transferred. This also re-wires live protocol
+          // workers after an indexer restart.
+          this.indexerIsReady = true;
           markReady();
+          for (let i = 0; i < this.workers.length; i++) {
+            if (this.workerStarted[i]) this.connectIndexer(i);
+          }
           break;
         case "dirty":
           this.onDirty?.(msg);
