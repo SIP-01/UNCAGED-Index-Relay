@@ -1131,7 +1131,12 @@ describe("Relay", () => {
 
       assert.equal(sentMessages.length, 2);
       assert.deepEqual(sentMessages[0], ["OK", event.id, true, ""]);
-      assert.deepEqual(sentMessages[1], ["EVENT", "live-web-reactions", event]);
+      assert.equal(sentMessages[1][0], "EVENT");
+      assert.equal(sentMessages[1][1], "live-web-reactions");
+      const broadcast = sentMessages[1][2] as typeof event;
+      assert.equal(broadcast.id, event.id);
+      assert.equal(broadcast.kind, 17);
+      assert.deepEqual(broadcast.tags, event.tags);
     });
   });
 
