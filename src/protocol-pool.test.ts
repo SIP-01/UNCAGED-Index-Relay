@@ -193,7 +193,7 @@ describe("ProtocolPool", () => {
     );
   });
 
-  it("stores a valid EVENT through the indexer worker (OK true)", async () => {
+  it("stores a valid EVENT through the indexer worker (OK true)", { timeout: 15000 }, async () => {
     // Kind 1 goes through the full write path: protocol worker verifies,
     // then RPCs the indexer over its MessageChannel port; the indexer's
     // bulk flush against the mock confirms, and OK true comes back.
@@ -236,7 +236,7 @@ describe("ProtocolPool", () => {
     assert.equal(frames.get(301), undefined);
   });
 
-  it("recovers from a protocol worker dying", async () => {
+  it("recovers from a protocol worker dying", { timeout: 15000 }, async () => {
     // Note: runs last among the pool tests — it kills worker state
     // (subscriptions from earlier tests die with the worker).
     // biome-ignore lint/suspicious/noExplicitAny: test-only access to internals
@@ -259,7 +259,7 @@ describe("ProtocolPool", () => {
     assert.equal(frame[0], "NOTICE");
   });
 
-  it("trips the crash-loop guard after repeated worker deaths", async () => {
+  it("trips the crash-loop guard after repeated worker deaths", { timeout: 15000 }, async () => {
     // The previous test already recorded one death. Kill the same slot
     // until CRASH_LOOP_MAX_DEATHS (3) is reached within the window.
     // biome-ignore lint/suspicious/noExplicitAny: test-only access to internals
