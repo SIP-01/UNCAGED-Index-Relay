@@ -177,7 +177,7 @@ describe("buildSearchText", () => {
       });
       assert.equal(
         buildSearchText(event(39697, content)),
-        "Example Page\nA page about examples",
+        "A page about examples\nExample Page",
       );
     });
 
