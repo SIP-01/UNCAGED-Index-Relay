@@ -9102,7 +9102,7 @@ describe("OpenSearchRelay.recomputeScores", () => {
         title: "The Nostr Protocol Explained",
       });
       const wrongTitle = makeDoc(
-        "https://example.com/blog/nostr-protocol",
+        "https://example.com/blog/another-page",
         [],
         { title: "Something else entirely" },
       );
