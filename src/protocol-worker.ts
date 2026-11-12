@@ -231,8 +231,10 @@ function openConn(id: number, ip?: string, userAgent?: string): void {
 
 self.onmessage = (event: MessageEvent<ToProtocolWorker>) => {
   const msg = event.data;
+  console.log("[protocol-worker] received main message", msg.t);
   switch (msg.t) {
     case "indexer_port":
+      console.log("[protocol-worker] attaching indexer port");
       indexer.bind(msg.port);
       break;
 
