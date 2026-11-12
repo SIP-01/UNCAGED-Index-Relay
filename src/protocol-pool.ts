@@ -169,6 +169,7 @@ export class ProtocolPool {
    */
   private connectIndexer(workerIndex: number): void {
     const channel = new MessageChannel();
+    console.log("[protocol-pool] connecting indexer channel", workerIndex);
     this.workers[workerIndex].postMessage(
       { t: "indexer_port", port: channel.port1 } satisfies ToProtocolWorker,
       [channel.port1],
