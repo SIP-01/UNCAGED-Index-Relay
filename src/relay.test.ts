@@ -1049,6 +1049,92 @@ describe("Relay", () => {
     });
   });
 
+  describe("NIP-25 external reactions and NIP-73 filters", () => {
+    it("accepts kind-17 external web reactions without rewriting NIP-73 tags", async () => {
+      const sk = generateSecretKey();
+      const event = finalizeEvent(
+        {
+          kind: 17,
+          created_at: Math.floor(Date.now() / 1000),
+          tags: [
+            ["k", "web"],
+            ["i", "https://example.com/article"],
+          ],
+          content: "+",
+        },
+        sk,
+      );
+
+      await relay.handleEvent(mockWs, event);
+      relay.flushBroadcasts();
+
+      assert.equal(sentMessages.length, 1);
+      assert.deepEqual(sentMessages[0], ["OK", event.id, true, ""]);
+    });
+
+    it("passes #i and #k filters unchanged to storage for kind-17 web reactions", async () => {
+      const url = "https://example.com/article";
+      const sk = generateSecretKey();
+      const reaction = finalizeEvent(
+        {
+          kind: 17,
+          created_at: Math.floor(Date.now() / 1000),
+          tags: [["k", "web"], ["i", url]],
+          content: "+",
+        },
+        sk,
+      );
+      let captured: Filter[] = [];
+      mockStorage.query = async (filters: Filter[]) => {
+        captured = filters;
+        return [reaction];
+      };
+
+      await relay.handleReq(mockWs, "web-reactions", [{
+        kinds: [17],
+        "#k": ["web"],
+        "#i": [url],
+      }]);
+
+      assert.deepEqual(captured, [{
+        kinds: [17],
+        "#k": ["web"],
+        "#i": [url],
+        limit: 100,
+      }]);
+      assert.equal(sentMessages[0][0], "EVENT");
+      assert.deepEqual(sentMessages[sentMessages.length - 1], ["EOSE", "web-reactions"]);
+    });
+
+    it("matches live kind-17 broadcasts on both #i and #k", async () => {
+      const url = "https://example.com/live";
+      const sk = generateSecretKey();
+      mockStorage.query = async () => [];
+      await relay.handleReq(mockWs, "live-web-reactions", [{
+        kinds: [17],
+        "#k": ["web"],
+        "#i": [url],
+      }]);
+      sentMessages.length = 0;
+
+      const event = finalizeEvent(
+        {
+          kind: 17,
+          created_at: Math.floor(Date.now() / 1000),
+          tags: [["k", "web"], ["i", url]],
+          content: "-",
+        },
+        sk,
+      );
+      await relay.handleEvent(mockWs, event);
+      relay.flushBroadcasts();
+
+      assert.equal(sentMessages.length, 2);
+      assert.deepEqual(sentMessages[0], ["EVENT", "live-web-reactions", event]);
+      assert.deepEqual(sentMessages[1], ["OK", event.id, true, ""]);
+    });
+  });
+
   describe("handleReq", () => {
     it("should accept valid REQ and send events with EOSE", async () => {
       const sk = generateSecretKey();
