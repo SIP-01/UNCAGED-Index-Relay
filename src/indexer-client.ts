@@ -125,10 +125,12 @@ export class IndexerClient {
     port.onmessage = (event) => {
       const message = event.data as IndexerPortMessage;
       if (message.t === "ready") {
+        console.log("[indexer-client] channel ready");
         this.portReady = true;
         this.flush();
         return;
       }
+      console.log("[indexer-client] received replies", message.items.length);
       for (const item of message.items) {
         const pending = this.pending.get(item.reqId);
         if (!pending) continue;
@@ -195,6 +197,7 @@ export class IndexerClient {
   private flush(): void {
     this.flushScheduled = false;
     if (!this.port || !this.portReady || this.queue.length === 0) return;
+    console.log("[indexer-client] sending batch", this.queue.length);
     this.port.postMessage({
       t: "batch",
       items: this.queue,
