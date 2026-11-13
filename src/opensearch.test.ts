@@ -9347,7 +9347,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const results = await relay.query([
         { kinds: [39697], authors: [getPublicKey(sk)] },
       ]);
-      assert.deepEqual(results.map((e) => e.id), [v2.id]);
+      assert.deepEqual(
+        results.map((e) => e.id),
+        [v2.id],
+      );
 
       // The loser is preserved as replaced history (history is enabled by
       // default and kind 39697 is not excluded).
