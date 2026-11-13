@@ -268,7 +268,8 @@ export class Nip85 {
         scores.quote_cnt === 0 &&
         scores.zap_cnt === 0 &&
         zapAmount === 0
-      ) continue;
+      )
+        continue;
 
       const event = await this.signer.signEvent({
         kind: 30384,
