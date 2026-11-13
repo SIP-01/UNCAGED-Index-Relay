@@ -107,16 +107,12 @@ describe("SIP-01 §13 test vectors (byte-compatibility)", () => {
   });
 
   it("accepts the spec §19 minimal example", () => {
-    const doc = event(
-      WEB_DOCUMENT_KIND,
-      '{"title":"Example"}',
-      [
-        ["d", "widx:0f115db062b7c0dd030b16878c99dea5"],
-        ["u", "https://example.com/"],
-        ["v", "1"],
-        ["alt", "Web index observation: Example"],
-      ],
-    );
+    const doc = event(WEB_DOCUMENT_KIND, '{"title":"Example"}', [
+      ["d", "widx:0f115db062b7c0dd030b16878c99dea5"],
+      ["u", "https://example.com/"],
+      ["v", "1"],
+      ["alt", "Web index observation: Example"],
+    ]);
     assert.equal(validateWebDocument(doc), undefined);
   });
 });
