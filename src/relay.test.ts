@@ -1131,7 +1131,10 @@ describe("Relay", () => {
         {
           kind: 17,
           created_at: Math.floor(Date.now() / 1000),
-          tags: [["k", "web"], ["i", url]],
+          tags: [
+            ["k", "web"],
+            ["i", url],
+          ],
           content: "-",
         },
         sk,
@@ -3119,12 +3122,18 @@ describe("Relay", () => {
     it("uses the earliest timestamp when duplicate expiration tags exist", async () => {
       const sk = generateSecretKey();
       const now = Math.floor(Date.now() / 1000);
-      const event = finalizeEvent({
-        kind: 1,
-        created_at: now,
-        tags: [["expiration", String(now + 3600)], ["expiration", String(now - 1)]],
-        content: "Duplicate expiry",
-      }, sk);
+      const event = finalizeEvent(
+        {
+          kind: 1,
+          created_at: now,
+          tags: [
+            ["expiration", String(now + 3600)],
+            ["expiration", String(now - 1)],
+          ],
+          content: "Duplicate expiry",
+        },
+        sk,
+      );
       await relay.handleEvent(mockWs, event);
       assert.equal(sentMessages[0]?.[2], false);
       assert.ok(String(sentMessages[0]?.[3]).includes("expired"));
