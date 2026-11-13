@@ -193,22 +193,26 @@ describe("ProtocolPool", () => {
     );
   });
 
-  it("stores a valid EVENT through the indexer worker (OK true)", { timeout: 15000 }, async () => {
-    // Kind 1 goes through the full write path: protocol worker verifies,
-    // then RPCs the indexer over its MessageChannel port; the indexer's
-    // bulk flush against the mock confirms, and OK true comes back.
-    const event = createEvent({ kind: 1, content: "hello indexer" });
-    pool.open(210);
-    pool.message(210, JSON.stringify(["EVENT", event]));
-    await until(() =>
-      (frames.get(210) ?? []).some((f) => f[0] === "OK" && f[1] === event.id),
-    );
-    const ok = (frames.get(210) ?? []).find(
-      (f) => f[0] === "OK" && f[1] === event.id,
-    ) as unknown[];
-    assert.equal(ok[2], true, `expected OK true, got: ${JSON.stringify(ok)}`);
-    assert.ok(countBulkRequests() > 0, "mock OpenSearch got no bulk request");
-  });
+  it(
+    "stores a valid EVENT through the indexer worker (OK true)",
+    { timeout: 15000 },
+    async () => {
+      // Kind 1 goes through the full write path: protocol worker verifies,
+      // then RPCs the indexer over its MessageChannel port; the indexer's
+      // bulk flush against the mock confirms, and OK true comes back.
+      const event = createEvent({ kind: 1, content: "hello indexer" });
+      pool.open(210);
+      pool.message(210, JSON.stringify(["EVENT", event]));
+      await until(() =>
+        (frames.get(210) ?? []).some((f) => f[0] === "OK" && f[1] === event.id),
+      );
+      const ok = (frames.get(210) ?? []).find(
+        (f) => f[0] === "OK" && f[1] === event.id,
+      ) as unknown[];
+      assert.equal(ok[2], true, `expected OK true, got: ${JSON.stringify(ok)}`);
+      assert.ok(countBulkRequests() > 0, "mock OpenSearch got no bulk request");
+    },
+  );
 
   it("collects per-worker metrics exposition including the indexer", async () => {
     const collected = await pool.metrics();
@@ -236,7 +240,10 @@ describe("ProtocolPool", () => {
     assert.equal(frames.get(301), undefined);
   });
 
-  it("recovers from a protocol worker dying", { timeout: 15000 }, async () => {
+  it(
+    "recovers from a protocol worker dying",
+    { timeout: 15000 },
+    async () => {
     // Note: runs last among the pool tests — it kills worker state
     // (subscriptions from earlier tests die with the worker).
     // biome-ignore lint/suspicious/noExplicitAny: test-only access to internals
@@ -276,9 +283,13 @@ describe("ProtocolPool", () => {
     const frame = frames.get(402)?.[0] as unknown[];
     assert.equal(frame[0], "NOTICE");
     pool.close(402);
-  });
+    },
+  );
 
-  it("trips the crash-loop guard after repeated worker deaths", { timeout: 15000 }, async () => {
+  it(
+    "trips the crash-loop guard after repeated worker deaths",
+    { timeout: 15000 },
+    async () => {
     // The previous test already recorded one death. Kill the same slot
     // until CRASH_LOOP_MAX_DEATHS (3) is reached within the window.
     // biome-ignore lint/suspicious/noExplicitAny: test-only access to internals
@@ -300,8 +311,9 @@ describe("ProtocolPool", () => {
     pool.open(501);
     pool.message(501, "not json");
     await until(() => (frames.get(501)?.length ?? 0) > 0, 15_000);
-    assert.equal((frames.get(501)?.[0] as unknown[])[0], "NOTICE");
-  });
+      assert.equal((frames.get(501)?.[0] as unknown[])[0], "NOTICE");
+    },
+  );
 });
 
 describe("resolveProtocolWorkers", () => {
