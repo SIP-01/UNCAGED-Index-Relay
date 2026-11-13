@@ -256,11 +256,14 @@ export class Nip85 {
       if (scores.zap_cnt > 0) tags.push(["zap_cnt", scores.zap_cnt.toString()]);
       if (zapAmount > 0) tags.push(["zap_amount", zapAmount.toString()]);
 
-      // The NIP-73 k tag is classification metadata, not engagement.
+      // Publish addressable assertions for any non-zero engagement, including zaps.
       if (
         scores.comment_cnt === 0 &&
+        scores.repost_cnt === 0 &&
         scores.reaction_cnt === 0 &&
-        scores.repost_cnt === 0
+        scores.quote_cnt === 0 &&
+        scores.zap_cnt === 0 &&
+        zapAmount === 0
       ) continue;
 
       const event = await this.signer.signEvent({
@@ -329,8 +332,12 @@ export class Nip85 {
       if (scores.repost_cnt > 0)
         tags.push(["repost_cnt", scores.repost_cnt.toString()]);
 
-      // Only publish if we have actual stats.
-      if (tags.length <= 1) continue;
+      // NIP-73's k tag is classification metadata, not engagement.
+      if (
+        scores.comment_cnt === 0 &&
+        scores.reaction_cnt === 0 &&
+        scores.repost_cnt === 0
+      ) continue;
 
       const event = await this.signer.signEvent({
         kind: 30385,
