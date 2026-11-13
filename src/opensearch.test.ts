@@ -9127,7 +9127,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const both = await relay.query([
         { kinds: [39697], search: "inurl:blog title:nostr" },
       ]);
-      assert.deepEqual(both.map((e) => e.id), [hit.id]);
+      assert.deepEqual(
+        both.map((e) => e.id),
+        [hit.id],
+      );
     });
 
     it("topic:, type:, platform: and filetype: filter structured fields", async () => {
@@ -9151,32 +9154,42 @@ describe("OpenSearchRelay.recomputeScores", () => {
         ],
         { title: "A Paper" },
       );
-      const food = makeDoc(
-        "https://recipes.example/pasta",
-        [["t", "food"]],
-        { title: "Pasta Recipe" },
-      );
+      const food = makeDoc("https://recipes.example/pasta", [["t", "food"]], {
+        title: "Pasta Recipe",
+      });
       for (const doc of [repo, paper, food]) await relay.event(doc);
 
       const topicResults = await relay.query([
         { kinds: [39697], search: "topic:privacy" },
       ]);
-      assert.deepEqual(topicResults.map((e) => e.id), [paper.id]);
+      assert.deepEqual(
+        topicResults.map((e) => e.id),
+        [paper.id],
+      );
 
       const typeResults = await relay.query([
         { kinds: [39697], search: "type:repository" },
       ]);
-      assert.deepEqual(typeResults.map((e) => e.id), [repo.id]);
+      assert.deepEqual(
+        typeResults.map((e) => e.id),
+        [repo.id],
+      );
 
       const platformResults = await relay.query([
         { kinds: [39697], search: "platform:github" },
       ]);
-      assert.deepEqual(platformResults.map((e) => e.id), [repo.id]);
+      assert.deepEqual(
+        platformResults.map((e) => e.id),
+        [repo.id],
+      );
 
       const filetypeResults = await relay.query([
         { kinds: [39697], search: "filetype:pdf" },
       ]);
-      assert.deepEqual(filetypeResults.map((e) => e.id), [paper.id]);
+      assert.deepEqual(
+        filetypeResults.map((e) => e.id),
+        [paper.id],
+      );
 
       const negTopicResults = await relay.query([
         { kinds: [39697], search: "-topic:food" },
@@ -9203,17 +9216,26 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const afterUnix = await relay.query([
         { kinds: [39697], search: "after:1780000000" },
       ]);
-      assert.deepEqual(afterUnix.map((e) => e.id), [fresh.id]);
+      assert.deepEqual(
+        afterUnix.map((e) => e.id),
+        [fresh.id],
+      );
 
       const afterDate = await relay.query([
         { kinds: [39697], search: "after:2026-01-01" },
       ]);
-      assert.deepEqual(afterDate.map((e) => e.id), [fresh.id]);
+      assert.deepEqual(
+        afterDate.map((e) => e.id),
+        [fresh.id],
+      );
 
       const beforeDate = await relay.query([
         { kinds: [39697], search: "before:2026-01-01" },
       ]);
-      assert.deepEqual(beforeDate.map((e) => e.id), [old.id]);
+      assert.deepEqual(
+        beforeDate.map((e) => e.id),
+        [old.id],
+      );
     });
 
     it("lang: is an alias of language:", async () => {
@@ -9227,7 +9249,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const results = await relay.query([
         { kinds: [39697], search: "lang:en" },
       ]);
-      assert.deepEqual(results.map((e) => e.id), [en.id]);
+      assert.deepEqual(
+        results.map((e) => e.id),
+        [en.id],
+      );
     });
 
     it("plain text search matches SIP-01 title and description", async () => {
@@ -9248,7 +9273,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const results = await relay.query([
         { kinds: [39697], search: "privacy sort:new" },
       ]);
-      assert.deepEqual(results.map((e) => e.id), [hit.id]);
+      assert.deepEqual(
+        results.map((e) => e.id),
+        [hit.id],
+      );
     });
 
     it("distinct:domain collapses results to one per host", async () => {
@@ -9270,7 +9298,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
         { kinds: [39697], search: "distinct:domain" },
       ]);
       // docs.github.com and github.com are distinct hosts → 3 groups.
-      assert.deepEqual(results.map((e) => e.id), [a1.id, a3.id, b1.id]);
+      assert.deepEqual(
+        results.map((e) => e.id),
+        [a1.id, a3.id, b1.id],
+      );
     });
 
     it("COUNT honors web-search operators", async () => {
