@@ -121,8 +121,12 @@ export class Nip85 {
       if (followers > 0) tags.push(["followers", followers.toString()]);
       if (postCount > 0) tags.push(["post_cnt", postCount.toString()]);
 
-      // Only publish if we have actual stats.
-      if (tags.length <= 1) continue;
+      // Only publish when a count is non-zero. NIP-73's required `k` tag is metadata, not engagement.
+      if (
+        scores.comment_cnt === 0 &&
+        scores.reaction_cnt === 0 &&
+        scores.repost_cnt === 0
+      ) continue;
 
       const event = await this.signer.signEvent({
         kind: 30382,
