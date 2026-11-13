@@ -8710,13 +8710,15 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const documents = new Map<string, WebDoc>();
 
       const fieldValue = (doc: WebDoc, field: string): unknown =>
-        field.split(".").reduce<unknown>(
-          (acc, part) =>
-            acc && typeof acc === "object"
-              ? (acc as Record<string, unknown>)[part]
-              : undefined,
-          doc,
-        );
+        field
+          .split(".")
+          .reduce<unknown>(
+            (acc, part) =>
+              acc && typeof acc === "object"
+                ? (acc as Record<string, unknown>)[part]
+                : undefined,
+            doc,
+          );
 
       const termMatches = (
         doc: WebDoc,
@@ -8772,8 +8774,8 @@ describe("OpenSearchRelay.recomputeScores", () => {
           .toLowerCase()
           .split(/\s+/)
           .filter((w) => w.length > 0);
-        const haystack = `${doc.search_text ?? ""} ${doc.url ?? ""}`
-          .toLowerCase();
+        const haystack =
+          `${doc.search_text ?? ""} ${doc.url ?? ""}`.toLowerCase();
         return words.every((w) => haystack.includes(w));
       };
 
@@ -8797,10 +8799,7 @@ describe("OpenSearchRelay.recomputeScores", () => {
             if (!matchMatches(doc, field, value)) return false;
           } else if (clause.multi_match) {
             if (
-              !multiMatchMatches(
-                doc,
-                clause.multi_match as { query?: unknown },
-              )
+              !multiMatchMatches(doc, clause.multi_match as { query?: unknown })
             )
               return false;
           } else if (clause.range) {
@@ -9058,10 +9057,7 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const negResults = await relay.query([
         { kinds: [39697], search: "site:github.com -site:spam.github.com" },
       ]);
-      assert.deepEqual(
-        new Set(negResults.map((e) => e.id)),
-        new Set([gh.id]),
-      );
+      assert.deepEqual(new Set(negResults.map((e) => e.id)), new Set([gh.id]));
     });
 
     it("domain: matches the exact host only", async () => {
@@ -9075,7 +9071,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const results = await relay.query([
         { kinds: [39697], search: "domain:github.com" },
       ]);
-      assert.deepEqual(results.map((e) => e.id), [root.id]);
+      assert.deepEqual(
+        results.map((e) => e.id),
+        [root.id],
+      );
     });
 
     it("url: canonicalizes the query value before matching", async () => {
@@ -9088,7 +9087,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const results = await relay.query([
         { kinds: [39697], search: "url:HTTPS://Example.COM:443/page#frag" },
       ]);
-      assert.deepEqual(results.map((e) => e.id), [doc.id]);
+      assert.deepEqual(
+        results.map((e) => e.id),
+        [doc.id],
+      );
     });
 
     it("inurl: matches URL tokens, title: matches titles (AND across tokens)", async () => {
@@ -9101,11 +9103,9 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const wrongPath = makeDoc("https://example.com/about", [], {
         title: "The Nostr Protocol Explained",
       });
-      const wrongTitle = makeDoc(
-        "https://example.com/blog/another-page",
-        [],
-        { title: "Something else entirely" },
-      );
+      const wrongTitle = makeDoc("https://example.com/blog/another-page", [], {
+        title: "Something else entirely",
+      });
       for (const doc of [hit, wrongPath, wrongTitle]) await relay.event(doc);
 
       const urlResults = await relay.query([
