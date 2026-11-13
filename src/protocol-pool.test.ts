@@ -254,8 +254,12 @@ describe("ProtocolPool", () => {
     victim.terminate();
     await until(() => lostConnIds.includes(401));
 
-    // The slot respawned: a fresh connection routed to it still works.
+    // The slot respawned. Wait for the replacement worker's ready
+    // handshake before sending ordinary messages: the Worker object is
+    // installed before its module has finished initializing, and Bun may
+    // not have installed the message handler yet.
     await until(() => internals.workers[victimIndex] !== victim);
+    await internals.workerReady[victimIndex];
     pool.open(402);
     pool.message(402, "not json");
     await until(() => (frames.get(402)?.length ?? 0) > 0, 15_000);
