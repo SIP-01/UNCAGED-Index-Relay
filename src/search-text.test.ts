@@ -188,7 +188,10 @@ describe("buildSearchText", () => {
         "Example Page\nnostr",
       );
       // Notes: t tags stay out of search_text (hashtags are not body text).
-      assert.equal(buildSearchText(event(1, "Hello", [["t", "nostr"]])), "Hello");
+      assert.equal(
+        buildSearchText(event(1, "Hello", [["t", "nostr"]])),
+        "Hello",
+      );
     });
 
     it("should extract name and about from kind 40 (channel creation)", () => {
