@@ -783,15 +783,22 @@ export class Relay {
    * Check if an event has expired (NIP-40) by checking the "expiration" tag.
    * Returns true if the event has an expiration tag with a timestamp in the past.
    */
-  private expirationStatus(event: NostrEvent): { valid: boolean; expired: boolean } {
+  private expirationStatus(event: NostrEvent): {
+    valid: boolean;
+    expired: boolean;
+  } {
     const expirationTags = event.tags.filter((tag) => tag[0] === "expiration");
     if (expirationTags.length === 0) return { valid: true, expired: false };
 
     const values = expirationTags.map((tag) => tag[1]);
-    if (values.some((value) =>
-      typeof value !== "string" || value.length === 0 ||
-      Array.from(value).some((char) => char < "0" || char > "9"),
-    )) {
+    if (
+      values.some(
+        (value) =>
+          typeof value !== "string" ||
+          value.length === 0 ||
+          Array.from(value).some((char) => char < "0" || char > "9"),
+      )
+    ) {
       return { valid: false, expired: false };
     }
 
