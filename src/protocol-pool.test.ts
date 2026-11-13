@@ -260,11 +260,22 @@ describe("ProtocolPool", () => {
     // not have installed the message handler yet.
     await until(() => internals.workers[victimIndex] !== victim);
     await internals.workerReady[victimIndex];
+
+    // Force the least-loaded scheduler to choose the respawned slot. Without
+    // this, an equal-load tie always picks worker 0 and the test could pass
+    // by exercising the still-alive worker instead of the replacement.
+    const otherIndex = victimIndex === 0 ? 1 : 0;
+    const previousOtherCount = internals.connCounts[otherIndex] as number;
+    internals.connCounts[otherIndex] = previousOtherCount + 1;
     pool.open(402);
+    internals.connCounts[otherIndex] = previousOtherCount;
+    assert.equal(internals.connWorker.get(402), victimIndex);
+
     pool.message(402, "not json");
     await until(() => (frames.get(402)?.length ?? 0) > 0, 15_000);
     const frame = frames.get(402)?.[0] as unknown[];
     assert.equal(frame[0], "NOTICE");
+    pool.close(402);
   });
 
   it("trips the crash-loop guard after repeated worker deaths", { timeout: 15000 }, async () => {
