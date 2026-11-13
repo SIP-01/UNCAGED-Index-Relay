@@ -821,7 +821,10 @@ describe("Nip85", () => {
         event.tags.find((t) => t[0] === "d"),
         ["d", identifier],
       );
-      assert.deepEqual(event.tags.find((t) => t[0] === "k"), ["k", "web"]);
+      assert.deepEqual(
+        event.tags.find((t) => t[0] === "k"),
+        ["k", "web"],
+      );
       assert.deepEqual(
         event.tags.find((t) => t[0] === "comment_cnt"),
         ["comment_cnt", "4"],
@@ -863,7 +866,10 @@ describe("Nip85", () => {
         event.tags.find((t) => t[0] === "d"),
         ["d", "iso3166:VE"],
       );
-      assert.deepEqual(event.tags.find((t) => t[0] === "k"), ["k", "iso3166"]);
+      assert.deepEqual(
+        event.tags.find((t) => t[0] === "k"),
+        ["k", "iso3166"],
+      );
       assert.deepEqual(
         event.tags.find((t) => t[0] === "comment_cnt"),
         ["comment_cnt", "1"],
