@@ -3068,6 +3068,52 @@ describe("Relay", () => {
       assert.ok((sentMessages[0][3] as string).includes("expired"));
     });
 
+    it("should reject malformed expiration timestamps", async () => {
+      const sk = generateSecretKey();
+      const event = finalizeEvent({
+        kind: 1,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: [["expiration", "soon"]],
+        content: "Malformed expiry must not be stored",
+      }, sk);
+
+      await relay.handleEvent(mockWs, event);
+
+      assert.equal(sentMessages.length, 1);
+      assert.equal(sentMessages[0][2], false);
+      assert.ok(String(sentMessages[0][3]).includes("malformed NIP-40"));
+    });
+
+    it("should reject unsafe and negative expiration timestamps", async () => {
+      const sk = generateSecretKey();
+      for (const value of ["-1", "9007199254740992", "123seconds"]) {
+        sentMessages.length = 0;
+        const event = finalizeEvent({
+          kind: 1,
+          created_at: Math.floor(Date.now() / 1000),
+          tags: [["expiration", value]],
+          content: "Invalid expiry",
+        }, sk);
+        await relay.handleEvent(mockWs, event);
+        assert.equal(sentMessages[0]?.[2], false, `accepted expiry ${value}`);
+        assert.ok(String(sentMessages[0]?.[3]).includes("malformed NIP-40"));
+      }
+    });
+
+    it("uses the earliest timestamp when duplicate expiration tags exist", async () => {
+      const sk = generateSecretKey();
+      const now = Math.floor(Date.now() / 1000);
+      const event = finalizeEvent({
+        kind: 1,
+        created_at: now,
+        tags: [["expiration", String(now + 3600)], ["expiration", String(now - 1)]],
+        content: "Duplicate expiry",
+      }, sk);
+      await relay.handleEvent(mockWs, event);
+      assert.equal(sentMessages[0]?.[2], false);
+      assert.ok(String(sentMessages[0]?.[3]).includes("expired"));
+    });
+
     it("should accept an event with a future expiration", async () => {
       const sk = generateSecretKey();
       const futureTimestamp = String(Math.floor(Date.now() / 1000) + 3600); // 1 hour from now

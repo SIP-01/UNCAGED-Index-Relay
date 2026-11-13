@@ -783,14 +783,35 @@ export class Relay {
    * Check if an event has expired (NIP-40) by checking the "expiration" tag.
    * Returns true if the event has an expiration tag with a timestamp in the past.
    */
+  private expirationStatus(event: NostrEvent): { valid: boolean; expired: boolean } {
+    const expirationTags = event.tags.filter((tag) => tag[0] === "expiration");
+    if (expirationTags.length === 0) return { valid: true, expired: false };
+
+    const values = expirationTags.map((tag) => tag[1]);
+    if (values.some((value) =>
+      typeof value !== "string" || value.length === 0 ||
+      Array.from(value).some((char) => char < "0" || char > "9"),
+    )) {
+      return { valid: false, expired: false };
+    }
+
+    const timestamps = values.map(Number);
+    if (timestamps.some((value) => !Number.isSafeInteger(value) || value < 0)) {
+      return { valid: false, expired: false };
+    }
+
+    // If duplicate expiration tags appear, use the earliest deadline.
+    const expiresAt = Math.min(...timestamps);
+    return {
+      valid: true,
+      expired: expiresAt <= Math.floor(Date.now() / 1000),
+    };
+  }
+
   private isExpired(event: NostrEvent): boolean {
-    const expirationTag = event.tags.find(
-      (tag) => tag[0] === "expiration" && tag.length >= 2,
-    );
-    if (!expirationTag) return false;
-    const expiration = Number.parseInt(expirationTag[1], 10);
-    if (Number.isNaN(expiration)) return false;
-    return expiration <= Math.floor(Date.now() / 1000);
+    const status = this.expirationStatus(event);
+    // Malformed expiry metadata must never leak through live broadcasts.
+    return !status.valid || status.expired;
   }
 
   /**
@@ -843,8 +864,16 @@ export class Relay {
       }
     }
 
-    // NIP-40: Reject events that are already expired
-    if (this.isExpired(event)) {
+    // NIP-40: Validate expiration syntax and reject already-expired events.
+    const expiration = this.expirationStatus(event);
+    if (!expiration.valid) {
+      return {
+        eventId: event.id,
+        accepted: false,
+        message: "invalid: malformed NIP-40 expiration tag",
+      };
+    }
+    if (expiration.expired) {
       return {
         eventId: event.id,
         accepted: false,

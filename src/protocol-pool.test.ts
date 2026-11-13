@@ -243,6 +243,10 @@ describe("ProtocolPool", () => {
     const internals = pool as any;
 
     pool.open(401); // lands on the least-loaded worker
+    // Wait until the worker has actually processed the open. Posting an open
+    // and terminating immediately races the worker's message queue in CI.
+    pool.message(401, "not json");
+    await until(() => (frames.get(401)?.length ?? 0) > 0);
     const victimIndex = internals.connWorker.get(401) as number;
     const victim = internals.workers[victimIndex] as Worker;
 
@@ -269,8 +273,11 @@ describe("ProtocolPool", () => {
     while (crashLoopCount === 0) {
       const victim = internals.workers[0] as Worker;
       victim.terminate();
-      // Wait for the close handler to run (slot respawned = death recorded).
+      // Wait for the close handler and then the respawn's ready handshake
+      // before killing the next worker. Otherwise the test can terminate a
+      // worker that has not installed its message handler yet.
       await until(() => internals.workers[0] !== victim);
+      await internals.workerReady[0];
     }
     assert.equal(crashLoopCount, 1);
 

@@ -20,6 +20,20 @@ import type { EventScores } from "./opensearch.ts";
 import type { Client } from "./opensearch-client.ts";
 
 /** Options for constructing a {@link Nip85} instance. */
+/** Return the NIP-73 kind for identifiers the relay knows how to classify. */
+function nip73KindForIdentifier(identifier: string): string | undefined {
+  if (/^https?:\/\//i.test(identifier)) return "web";
+  const simple = identifier.match(/^(isbn|doi|geo|iso3166|isan):/i);
+  if (simple) return simple[1].toLowerCase();
+  if (identifier.startsWith("#")) return "#";
+  if (identifier.startsWith("podcast:guid:")) return "podcast:guid";
+  if (identifier.startsWith("podcast:item:guid:")) return "podcast:item:guid";
+  if (identifier.startsWith("podcast:publisher:guid:")) return "podcast:publisher:guid";
+  const chain = identifier.match(/^([a-z0-9-]+)(?::\d+)?:((?:tx)|(?:address)):/i);
+  if (chain) return `${chain[1].toLowerCase()}:${chain[2].toLowerCase()}`;
+  return undefined;
+}
+
 export interface Nip85Opts {
   /** OpenSearch client for direct aggregation queries. */
   client: Client;
@@ -107,8 +121,8 @@ export class Nip85 {
       if (followers > 0) tags.push(["followers", followers.toString()]);
       if (postCount > 0) tags.push(["post_cnt", postCount.toString()]);
 
-      // Only publish if we have actual stats.
-      if (tags.length <= 1) continue;
+      // Only publish when follower or post counts contain useful data.
+      if (followers === 0 && postCount === 0) continue;
 
       const event = await this.signer.signEvent({
         kind: 30382,
@@ -151,8 +165,15 @@ export class Nip85 {
       if (scores.zap_cnt > 0) tags.push(["zap_cnt", scores.zap_cnt.toString()]);
       if (zapAmount > 0) tags.push(["zap_amount", zapAmount.toString()]);
 
-      // Only publish if we have actual stats.
-      if (tags.length <= 1) continue;
+      // Publish event assertions for any non-zero engagement, including zaps.
+      if (
+        scores.comment_cnt === 0 &&
+        scores.repost_cnt === 0 &&
+        scores.reaction_cnt === 0 &&
+        scores.quote_cnt === 0 &&
+        scores.zap_cnt === 0 &&
+        zapAmount === 0
+      ) continue;
 
       const event = await this.signer.signEvent({
         kind: 30383,
@@ -235,8 +256,15 @@ export class Nip85 {
       if (scores.zap_cnt > 0) tags.push(["zap_cnt", scores.zap_cnt.toString()]);
       if (zapAmount > 0) tags.push(["zap_amount", zapAmount.toString()]);
 
-      // Only publish if we have actual stats.
-      if (tags.length <= 1) continue;
+      // Publish addressable assertions for any non-zero engagement, including zaps.
+      if (
+        scores.comment_cnt === 0 &&
+        scores.repost_cnt === 0 &&
+        scores.reaction_cnt === 0 &&
+        scores.quote_cnt === 0 &&
+        scores.zap_cnt === 0 &&
+        zapAmount === 0
+      ) continue;
 
       const event = await this.signer.signEvent({
         kind: 30384,
@@ -295,6 +323,8 @@ export class Nip85 {
 
     for (const [identifier, scores] of identifierScores) {
       const tags: string[][] = [["d", identifier]];
+      const externalKind = nip73KindForIdentifier(identifier);
+      if (externalKind) tags.push(["k", externalKind]);
       if (scores.comment_cnt > 0)
         tags.push(["comment_cnt", scores.comment_cnt.toString()]);
       if (scores.reaction_cnt > 0)
@@ -302,8 +332,12 @@ export class Nip85 {
       if (scores.repost_cnt > 0)
         tags.push(["repost_cnt", scores.repost_cnt.toString()]);
 
-      // Only publish if we have actual stats.
-      if (tags.length <= 1) continue;
+      // NIP-73's k tag is classification metadata, not engagement.
+      if (
+        scores.comment_cnt === 0 &&
+        scores.reaction_cnt === 0 &&
+        scores.repost_cnt === 0
+      ) continue;
 
       const event = await this.signer.signEvent({
         kind: 30385,
