@@ -91,7 +91,13 @@ const JSON_KINDS = new Set([
 ]);
 
 /** Field names to extract from JSON content for search. */
-const SEARCH_JSON_FIELDS = ["name", "about", "description", "display_name", "title"];
+const SEARCH_JSON_FIELDS = [
+  "name",
+  "about",
+  "description",
+  "display_name",
+  "title",
+];
 
 /** Tag names to extract for search (kind-agnostic). */
 const SEARCH_TAGS = new Set([

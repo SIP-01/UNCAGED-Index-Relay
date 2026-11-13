@@ -28,8 +28,11 @@ function nip73KindForIdentifier(identifier: string): string | undefined {
   if (identifier.startsWith("#")) return "#";
   if (identifier.startsWith("podcast:guid:")) return "podcast:guid";
   if (identifier.startsWith("podcast:item:guid:")) return "podcast:item:guid";
-  if (identifier.startsWith("podcast:publisher:guid:")) return "podcast:publisher:guid";
-  const chain = identifier.match(/^([a-z0-9-]+)(?::\d+)?:((?:tx)|(?:address)):/i);
+  if (identifier.startsWith("podcast:publisher:guid:"))
+    return "podcast:publisher:guid";
+  const chain = identifier.match(
+    /^([a-z0-9-]+)(?::\d+)?:((?:tx)|(?:address)):/i,
+  );
   if (chain) return `${chain[1].toLowerCase()}:${chain[2].toLowerCase()}`;
   return undefined;
 }
@@ -173,7 +176,8 @@ export class Nip85 {
         scores.quote_cnt === 0 &&
         scores.zap_cnt === 0 &&
         zapAmount === 0
-      ) continue;
+      )
+        continue;
 
       const event = await this.signer.signEvent({
         kind: 30383,
@@ -264,7 +268,8 @@ export class Nip85 {
         scores.quote_cnt === 0 &&
         scores.zap_cnt === 0 &&
         zapAmount === 0
-      ) continue;
+      )
+        continue;
 
       const event = await this.signer.signEvent({
         kind: 30384,
@@ -337,7 +342,8 @@ export class Nip85 {
         scores.comment_cnt === 0 &&
         scores.reaction_cnt === 0 &&
         scores.repost_cnt === 0
-      ) continue;
+      )
+        continue;
 
       const event = await this.signer.signEvent({
         kind: 30385,

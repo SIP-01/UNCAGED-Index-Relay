@@ -8710,13 +8710,15 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const documents = new Map<string, WebDoc>();
 
       const fieldValue = (doc: WebDoc, field: string): unknown =>
-        field.split(".").reduce<unknown>(
-          (acc, part) =>
-            acc && typeof acc === "object"
-              ? (acc as Record<string, unknown>)[part]
-              : undefined,
-          doc,
-        );
+        field
+          .split(".")
+          .reduce<unknown>(
+            (acc, part) =>
+              acc && typeof acc === "object"
+                ? (acc as Record<string, unknown>)[part]
+                : undefined,
+            doc,
+          );
 
       const termMatches = (
         doc: WebDoc,
@@ -8772,8 +8774,8 @@ describe("OpenSearchRelay.recomputeScores", () => {
           .toLowerCase()
           .split(/\s+/)
           .filter((w) => w.length > 0);
-        const haystack = `${doc.search_text ?? ""} ${doc.url ?? ""}`
-          .toLowerCase();
+        const haystack =
+          `${doc.search_text ?? ""} ${doc.url ?? ""}`.toLowerCase();
         return words.every((w) => haystack.includes(w));
       };
 
@@ -8797,10 +8799,7 @@ describe("OpenSearchRelay.recomputeScores", () => {
             if (!matchMatches(doc, field, value)) return false;
           } else if (clause.multi_match) {
             if (
-              !multiMatchMatches(
-                doc,
-                clause.multi_match as { query?: unknown },
-              )
+              !multiMatchMatches(doc, clause.multi_match as { query?: unknown })
             )
               return false;
           } else if (clause.range) {
@@ -9058,10 +9057,7 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const negResults = await relay.query([
         { kinds: [39697], search: "site:github.com -site:spam.github.com" },
       ]);
-      assert.deepEqual(
-        new Set(negResults.map((e) => e.id)),
-        new Set([gh.id]),
-      );
+      assert.deepEqual(new Set(negResults.map((e) => e.id)), new Set([gh.id]));
     });
 
     it("domain: matches the exact host only", async () => {
@@ -9075,7 +9071,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const results = await relay.query([
         { kinds: [39697], search: "domain:github.com" },
       ]);
-      assert.deepEqual(results.map((e) => e.id), [root.id]);
+      assert.deepEqual(
+        results.map((e) => e.id),
+        [root.id],
+      );
     });
 
     it("url: canonicalizes the query value before matching", async () => {
@@ -9088,7 +9087,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const results = await relay.query([
         { kinds: [39697], search: "url:HTTPS://Example.COM:443/page#frag" },
       ]);
-      assert.deepEqual(results.map((e) => e.id), [doc.id]);
+      assert.deepEqual(
+        results.map((e) => e.id),
+        [doc.id],
+      );
     });
 
     it("inurl: matches URL tokens, title: matches titles (AND across tokens)", async () => {
@@ -9101,11 +9103,9 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const wrongPath = makeDoc("https://example.com/about", [], {
         title: "The Nostr Protocol Explained",
       });
-      const wrongTitle = makeDoc(
-        "https://example.com/blog/another-page",
-        [],
-        { title: "Something else entirely" },
-      );
+      const wrongTitle = makeDoc("https://example.com/blog/another-page", [], {
+        title: "Something else entirely",
+      });
       for (const doc of [hit, wrongPath, wrongTitle]) await relay.event(doc);
 
       const urlResults = await relay.query([
@@ -9127,7 +9127,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const both = await relay.query([
         { kinds: [39697], search: "inurl:blog title:nostr" },
       ]);
-      assert.deepEqual(both.map((e) => e.id), [hit.id]);
+      assert.deepEqual(
+        both.map((e) => e.id),
+        [hit.id],
+      );
     });
 
     it("topic:, type:, platform: and filetype: filter structured fields", async () => {
@@ -9151,32 +9154,42 @@ describe("OpenSearchRelay.recomputeScores", () => {
         ],
         { title: "A Paper" },
       );
-      const food = makeDoc(
-        "https://recipes.example/pasta",
-        [["t", "food"]],
-        { title: "Pasta Recipe" },
-      );
+      const food = makeDoc("https://recipes.example/pasta", [["t", "food"]], {
+        title: "Pasta Recipe",
+      });
       for (const doc of [repo, paper, food]) await relay.event(doc);
 
       const topicResults = await relay.query([
         { kinds: [39697], search: "topic:privacy" },
       ]);
-      assert.deepEqual(topicResults.map((e) => e.id), [paper.id]);
+      assert.deepEqual(
+        topicResults.map((e) => e.id),
+        [paper.id],
+      );
 
       const typeResults = await relay.query([
         { kinds: [39697], search: "type:repository" },
       ]);
-      assert.deepEqual(typeResults.map((e) => e.id), [repo.id]);
+      assert.deepEqual(
+        typeResults.map((e) => e.id),
+        [repo.id],
+      );
 
       const platformResults = await relay.query([
         { kinds: [39697], search: "platform:github" },
       ]);
-      assert.deepEqual(platformResults.map((e) => e.id), [repo.id]);
+      assert.deepEqual(
+        platformResults.map((e) => e.id),
+        [repo.id],
+      );
 
       const filetypeResults = await relay.query([
         { kinds: [39697], search: "filetype:pdf" },
       ]);
-      assert.deepEqual(filetypeResults.map((e) => e.id), [paper.id]);
+      assert.deepEqual(
+        filetypeResults.map((e) => e.id),
+        [paper.id],
+      );
 
       const negTopicResults = await relay.query([
         { kinds: [39697], search: "-topic:food" },
@@ -9203,17 +9216,26 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const afterUnix = await relay.query([
         { kinds: [39697], search: "after:1780000000" },
       ]);
-      assert.deepEqual(afterUnix.map((e) => e.id), [fresh.id]);
+      assert.deepEqual(
+        afterUnix.map((e) => e.id),
+        [fresh.id],
+      );
 
       const afterDate = await relay.query([
         { kinds: [39697], search: "after:2026-01-01" },
       ]);
-      assert.deepEqual(afterDate.map((e) => e.id), [fresh.id]);
+      assert.deepEqual(
+        afterDate.map((e) => e.id),
+        [fresh.id],
+      );
 
       const beforeDate = await relay.query([
         { kinds: [39697], search: "before:2026-01-01" },
       ]);
-      assert.deepEqual(beforeDate.map((e) => e.id), [old.id]);
+      assert.deepEqual(
+        beforeDate.map((e) => e.id),
+        [old.id],
+      );
     });
 
     it("lang: is an alias of language:", async () => {
@@ -9227,7 +9249,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const results = await relay.query([
         { kinds: [39697], search: "lang:en" },
       ]);
-      assert.deepEqual(results.map((e) => e.id), [en.id]);
+      assert.deepEqual(
+        results.map((e) => e.id),
+        [en.id],
+      );
     });
 
     it("plain text search matches SIP-01 title and description", async () => {
@@ -9248,7 +9273,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const results = await relay.query([
         { kinds: [39697], search: "privacy sort:new" },
       ]);
-      assert.deepEqual(results.map((e) => e.id), [hit.id]);
+      assert.deepEqual(
+        results.map((e) => e.id),
+        [hit.id],
+      );
     });
 
     it("distinct:domain collapses results to one per host", async () => {
@@ -9270,7 +9298,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
         { kinds: [39697], search: "distinct:domain" },
       ]);
       // docs.github.com and github.com are distinct hosts → 3 groups.
-      assert.deepEqual(results.map((e) => e.id), [a1.id, a3.id, b1.id]);
+      assert.deepEqual(
+        results.map((e) => e.id),
+        [a1.id, a3.id, b1.id],
+      );
     });
 
     it("COUNT honors web-search operators", async () => {
@@ -9316,7 +9347,10 @@ describe("OpenSearchRelay.recomputeScores", () => {
       const results = await relay.query([
         { kinds: [39697], authors: [getPublicKey(sk)] },
       ]);
-      assert.deepEqual(results.map((e) => e.id), [v2.id]);
+      assert.deepEqual(
+        results.map((e) => e.id),
+        [v2.id],
+      );
 
       // The loser is preserved as replaced history (history is enabled by
       // default and kind 39697 is not excluded).

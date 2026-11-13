@@ -265,7 +265,6 @@ export class ProtocolPool {
       if (this.disposed || this.workers[workerIndex] !== worker) return;
       this.handleWorkerDeath(workerIndex);
     });
-
   }
 
   /**

@@ -1709,8 +1709,7 @@ export class OpenSearchRelay implements NStore, AsyncDisposable {
       // Handle language: extension (NIP-50), with `lang:` as an alias.
       const languageToken = tokens.find(
         (t) =>
-          typeof t === "object" &&
-          (t.key === "language" || t.key === "lang"),
+          typeof t === "object" && (t.key === "language" || t.key === "lang"),
       );
       if (languageToken && typeof languageToken === "object") {
         must.push({

@@ -1079,7 +1079,10 @@ describe("Relay", () => {
         {
           kind: 17,
           created_at: Math.floor(Date.now() / 1000),
-          tags: [["k", "web"], ["i", url]],
+          tags: [
+            ["k", "web"],
+            ["i", url],
+          ],
           content: "+",
         },
         sk,
@@ -1090,11 +1093,13 @@ describe("Relay", () => {
         return [reaction];
       };
 
-      await relay.handleReq(mockWs, "web-reactions", [{
-        kinds: [17],
-        "#k": ["web"],
-        "#i": [url],
-      }]);
+      await relay.handleReq(mockWs, "web-reactions", [
+        {
+          kinds: [17],
+          "#k": ["web"],
+          "#i": [url],
+        },
+      ]);
 
       assert.equal(captured.length, 1);
       assert.deepEqual(captured[0].kinds, [17]);
@@ -1103,25 +1108,33 @@ describe("Relay", () => {
       assert.equal(captured[0].limit, 100);
       assert.equal(typeof captured[0].until, "number");
       assert.equal(sentMessages[0][0], "EVENT");
-      assert.deepEqual(sentMessages[sentMessages.length - 1], ["EOSE", "web-reactions"]);
+      assert.deepEqual(sentMessages[sentMessages.length - 1], [
+        "EOSE",
+        "web-reactions",
+      ]);
     });
 
     it("matches live kind-17 broadcasts on both #i and #k", async () => {
       const url = "https://example.com/live";
       const sk = generateSecretKey();
       mockStorage.query = async () => [];
-      await relay.handleReq(mockWs, "live-web-reactions", [{
-        kinds: [17],
-        "#k": ["web"],
-        "#i": [url],
-      }]);
+      await relay.handleReq(mockWs, "live-web-reactions", [
+        {
+          kinds: [17],
+          "#k": ["web"],
+          "#i": [url],
+        },
+      ]);
       sentMessages.length = 0;
 
       const event = finalizeEvent(
         {
           kind: 17,
           created_at: Math.floor(Date.now() / 1000),
-          tags: [["k", "web"], ["i", url]],
+          tags: [
+            ["k", "web"],
+            ["i", url],
+          ],
           content: "-",
         },
         sk,
@@ -3070,12 +3083,15 @@ describe("Relay", () => {
 
     it("should reject malformed expiration timestamps", async () => {
       const sk = generateSecretKey();
-      const event = finalizeEvent({
-        kind: 1,
-        created_at: Math.floor(Date.now() / 1000),
-        tags: [["expiration", "soon"]],
-        content: "Malformed expiry must not be stored",
-      }, sk);
+      const event = finalizeEvent(
+        {
+          kind: 1,
+          created_at: Math.floor(Date.now() / 1000),
+          tags: [["expiration", "soon"]],
+          content: "Malformed expiry must not be stored",
+        },
+        sk,
+      );
 
       await relay.handleEvent(mockWs, event);
 
@@ -3088,12 +3104,15 @@ describe("Relay", () => {
       const sk = generateSecretKey();
       for (const value of ["-1", "9007199254740992", "123seconds"]) {
         sentMessages.length = 0;
-        const event = finalizeEvent({
-          kind: 1,
-          created_at: Math.floor(Date.now() / 1000),
-          tags: [["expiration", value]],
-          content: "Invalid expiry",
-        }, sk);
+        const event = finalizeEvent(
+          {
+            kind: 1,
+            created_at: Math.floor(Date.now() / 1000),
+            tags: [["expiration", value]],
+            content: "Invalid expiry",
+          },
+          sk,
+        );
         await relay.handleEvent(mockWs, event);
         assert.equal(sentMessages[0]?.[2], false, `accepted expiry ${value}`);
         assert.ok(String(sentMessages[0]?.[3]).includes("malformed NIP-40"));
@@ -3103,12 +3122,18 @@ describe("Relay", () => {
     it("uses the earliest timestamp when duplicate expiration tags exist", async () => {
       const sk = generateSecretKey();
       const now = Math.floor(Date.now() / 1000);
-      const event = finalizeEvent({
-        kind: 1,
-        created_at: now,
-        tags: [["expiration", String(now + 3600)], ["expiration", String(now - 1)]],
-        content: "Duplicate expiry",
-      }, sk);
+      const event = finalizeEvent(
+        {
+          kind: 1,
+          created_at: now,
+          tags: [
+            ["expiration", String(now + 3600)],
+            ["expiration", String(now - 1)],
+          ],
+          content: "Duplicate expiry",
+        },
+        sk,
+      );
       await relay.handleEvent(mockWs, event);
       assert.equal(sentMessages[0]?.[2], false);
       assert.ok(String(sentMessages[0]?.[3]).includes("expired"));

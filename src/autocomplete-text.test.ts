@@ -63,7 +63,10 @@ describe("buildAutocompleteText", () => {
         title: "Example Page",
         description: "Not autocompleted",
       });
-      assert.equal(buildAutocompleteText(event(39697, content)), "Example Page");
+      assert.equal(
+        buildAutocompleteText(event(39697, content)),
+        "Example Page",
+      );
     });
 
     it("skips widx: d tags (URL identity hashes, not slugs)", () => {

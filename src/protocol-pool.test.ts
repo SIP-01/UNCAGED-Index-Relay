@@ -193,22 +193,26 @@ describe("ProtocolPool", () => {
     );
   });
 
-  it("stores a valid EVENT through the indexer worker (OK true)", { timeout: 15000 }, async () => {
-    // Kind 1 goes through the full write path: protocol worker verifies,
-    // then RPCs the indexer over its MessageChannel port; the indexer's
-    // bulk flush against the mock confirms, and OK true comes back.
-    const event = createEvent({ kind: 1, content: "hello indexer" });
-    pool.open(210);
-    pool.message(210, JSON.stringify(["EVENT", event]));
-    await until(() =>
-      (frames.get(210) ?? []).some((f) => f[0] === "OK" && f[1] === event.id),
-    );
-    const ok = (frames.get(210) ?? []).find(
-      (f) => f[0] === "OK" && f[1] === event.id,
-    ) as unknown[];
-    assert.equal(ok[2], true, `expected OK true, got: ${JSON.stringify(ok)}`);
-    assert.ok(countBulkRequests() > 0, "mock OpenSearch got no bulk request");
-  });
+  it(
+    "stores a valid EVENT through the indexer worker (OK true)",
+    { timeout: 15000 },
+    async () => {
+      // Kind 1 goes through the full write path: protocol worker verifies,
+      // then RPCs the indexer over its MessageChannel port; the indexer's
+      // bulk flush against the mock confirms, and OK true comes back.
+      const event = createEvent({ kind: 1, content: "hello indexer" });
+      pool.open(210);
+      pool.message(210, JSON.stringify(["EVENT", event]));
+      await until(() =>
+        (frames.get(210) ?? []).some((f) => f[0] === "OK" && f[1] === event.id),
+      );
+      const ok = (frames.get(210) ?? []).find(
+        (f) => f[0] === "OK" && f[1] === event.id,
+      ) as unknown[];
+      assert.equal(ok[2], true, `expected OK true, got: ${JSON.stringify(ok)}`);
+      assert.ok(countBulkRequests() > 0, "mock OpenSearch got no bulk request");
+    },
+  );
 
   it("collects per-worker metrics exposition including the indexer", async () => {
     const collected = await pool.metrics();
@@ -254,39 +258,58 @@ describe("ProtocolPool", () => {
     victim.terminate();
     await until(() => lostConnIds.includes(401));
 
-    // The slot respawned: a fresh connection routed to it still works.
+    // The slot respawned. Wait for the replacement worker's ready
+    // handshake before sending ordinary messages: the Worker object is
+    // installed before its module has finished initializing, and Bun may
+    // not have installed the message handler yet.
     await until(() => internals.workers[victimIndex] !== victim);
+    await internals.workerReady[victimIndex];
+
+    // Force the least-loaded scheduler to choose the respawned slot. Without
+    // this, an equal-load tie always picks worker 0 and the test could pass
+    // by exercising the still-alive worker instead of the replacement.
+    const otherIndex = victimIndex === 0 ? 1 : 0;
+    const previousOtherCount = internals.connCounts[otherIndex] as number;
+    internals.connCounts[otherIndex] = previousOtherCount + 1;
     pool.open(402);
+    internals.connCounts[otherIndex] = previousOtherCount;
+    assert.equal(internals.connWorker.get(402), victimIndex);
+
     pool.message(402, "not json");
     await until(() => (frames.get(402)?.length ?? 0) > 0, 15_000);
     const frame = frames.get(402)?.[0] as unknown[];
     assert.equal(frame[0], "NOTICE");
+    pool.close(402);
   });
 
-  it("trips the crash-loop guard after repeated worker deaths", { timeout: 15000 }, async () => {
-    // The previous test already recorded one death. Kill the same slot
-    // until CRASH_LOOP_MAX_DEATHS (3) is reached within the window.
-    // biome-ignore lint/suspicious/noExplicitAny: test-only access to internals
-    const internals = pool as any;
-    assert.equal(crashLoopCount, 0);
+  it(
+    "trips the crash-loop guard after repeated worker deaths",
+    { timeout: 15000 },
+    async () => {
+      // The previous test already recorded one death. Kill the same slot
+      // until CRASH_LOOP_MAX_DEATHS (3) is reached within the window.
+      // biome-ignore lint/suspicious/noExplicitAny: test-only access to internals
+      const internals = pool as any;
+      assert.equal(crashLoopCount, 0);
 
-    while (crashLoopCount === 0) {
-      const victim = internals.workers[0] as Worker;
-      victim.terminate();
-      // Wait for the close handler and then the respawn's ready handshake
-      // before killing the next worker. Otherwise the test can terminate a
-      // worker that has not installed its message handler yet.
-      await until(() => internals.workers[0] !== victim);
-      await internals.workerReady[0];
-    }
-    assert.equal(crashLoopCount, 1);
+      while (crashLoopCount === 0) {
+        const victim = internals.workers[0] as Worker;
+        victim.terminate();
+        // Wait for the close handler and then the respawn's ready handshake
+        // before killing the next worker. Otherwise the test can terminate a
+        // worker that has not installed its message handler yet.
+        await until(() => internals.workers[0] !== victim);
+        await internals.workerReady[0];
+      }
+      assert.equal(crashLoopCount, 1);
 
-    // The stub doesn't exit, so the pool kept respawning: still serves.
-    pool.open(501);
-    pool.message(501, "not json");
-    await until(() => (frames.get(501)?.length ?? 0) > 0, 15_000);
-    assert.equal((frames.get(501)?.[0] as unknown[])[0], "NOTICE");
-  });
+      // The stub doesn't exit, so the pool kept respawning: still serves.
+      pool.open(501);
+      pool.message(501, "not json");
+      await until(() => (frames.get(501)?.length ?? 0) > 0, 15_000);
+      assert.equal((frames.get(501)?.[0] as unknown[])[0], "NOTICE");
+    },
+  );
 });
 
 describe("resolveProtocolWorkers", () => {
