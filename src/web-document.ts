@@ -137,7 +137,8 @@ const TOPIC_RE = /^[a-z0-9][a-z0-9-]{0,99}$/;
 const EXTENSION_VALUE_RE = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,49}$/;
 
 /** MIME type with optional parameters: `text/html; charset=utf-8`. */
-const MIME_RE = /^[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}\/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}(;\s*[^\s;=]+=[^\s;]+)*$/;
+const MIME_RE =
+  /^[a-zA-Z0-9][a-zA-Z0-9!#const MIME_RE = /^[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}\/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}(;\s*[^\s;=]+=[^\s;]+)*$/;^_.+-]{0,126}\/[a-zA-Z0-9][a-zA-Z0-9!#const MIME_RE = /^[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}\/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}(;\s*[^\s;=]+=[^\s;]+)*$/;^_.+-]{0,126}(;\s*[^\s;=]+=[^\s;]+)*$/;
 
 /** Dotted-quad IPv4 address (domain hierarchy makes no sense for IPs). */
 const IPV4_RE = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
