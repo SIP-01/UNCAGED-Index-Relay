@@ -240,10 +240,7 @@ describe("ProtocolPool", () => {
     assert.equal(frames.get(301), undefined);
   });
 
-  it(
-    "recovers from a protocol worker dying",
-    { timeout: 15000 },
-    async () => {
+  it("recovers from a protocol worker dying", { timeout: 15000 }, async () => {
     // Note: runs last among the pool tests — it kills worker state
     // (subscriptions from earlier tests die with the worker).
     // biome-ignore lint/suspicious/noExplicitAny: test-only access to internals
@@ -283,34 +280,33 @@ describe("ProtocolPool", () => {
     const frame = frames.get(402)?.[0] as unknown[];
     assert.equal(frame[0], "NOTICE");
     pool.close(402);
-    },
-  );
+  });
 
   it(
     "trips the crash-loop guard after repeated worker deaths",
     { timeout: 15000 },
     async () => {
-    // The previous test already recorded one death. Kill the same slot
-    // until CRASH_LOOP_MAX_DEATHS (3) is reached within the window.
-    // biome-ignore lint/suspicious/noExplicitAny: test-only access to internals
-    const internals = pool as any;
-    assert.equal(crashLoopCount, 0);
+      // The previous test already recorded one death. Kill the same slot
+      // until CRASH_LOOP_MAX_DEATHS (3) is reached within the window.
+      // biome-ignore lint/suspicious/noExplicitAny: test-only access to internals
+      const internals = pool as any;
+      assert.equal(crashLoopCount, 0);
 
-    while (crashLoopCount === 0) {
-      const victim = internals.workers[0] as Worker;
-      victim.terminate();
-      // Wait for the close handler and then the respawn's ready handshake
-      // before killing the next worker. Otherwise the test can terminate a
-      // worker that has not installed its message handler yet.
-      await until(() => internals.workers[0] !== victim);
-      await internals.workerReady[0];
-    }
-    assert.equal(crashLoopCount, 1);
+      while (crashLoopCount === 0) {
+        const victim = internals.workers[0] as Worker;
+        victim.terminate();
+        // Wait for the close handler and then the respawn's ready handshake
+        // before killing the next worker. Otherwise the test can terminate a
+        // worker that has not installed its message handler yet.
+        await until(() => internals.workers[0] !== victim);
+        await internals.workerReady[0];
+      }
+      assert.equal(crashLoopCount, 1);
 
-    // The stub doesn't exit, so the pool kept respawning: still serves.
-    pool.open(501);
-    pool.message(501, "not json");
-    await until(() => (frames.get(501)?.length ?? 0) > 0, 15_000);
+      // The stub doesn't exit, so the pool kept respawning: still serves.
+      pool.open(501);
+      pool.message(501, "not json");
+      await until(() => (frames.get(501)?.length ?? 0) > 0, 15_000);
       assert.equal((frames.get(501)?.[0] as unknown[])[0], "NOTICE");
     },
   );
