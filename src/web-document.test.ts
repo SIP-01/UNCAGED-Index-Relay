@@ -330,6 +330,22 @@ describe("validateWebDocument (SIP-01)", () => {
     assert.equal(validateWebDocument(doc), undefined);
   });
 
+  it("accepts v1.3 optional role/proto/a hints without changing the document index profile", () => {
+    const doc = webDoc("https://example.com/service", [
+      ["role", "tool"],
+      ["proto", "mcp"],
+      ["proto", "http"],
+      ["a", "39698:" + "a".repeat(64) + ":example-service"],
+    ]);
+    assert.equal(validateWebDocument(doc), undefined);
+    const fields = extractWebDocumentFields(doc);
+    assert.ok(fields);
+    // Current profile intentionally keeps these optional hints in the raw Nostr
+    // event only; no role/proto structured fields or kind-39698 directory exist yet.
+    assert.equal("role" in fields, false);
+    assert.equal("protocols" in fields, false);
+  });
+
   it("rejects a missing or duplicated required tag", () => {
     const noD = event(WEB_DOCUMENT_KIND, '{"title":"T"}', [
       ["u", "https://example.com/"],
