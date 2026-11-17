@@ -154,6 +154,11 @@ text, they become dedicated OpenSearch fields — `url`, `url_host`,
 detection), `content_hash` (from `x`), `published_at` (from `published`),
 `observed_at` (the event's `created_at`), `source`, and the optional
 extension tags `type`, `platform`, `category`, `network`, `country`, `mime`.
+Kind-39697 v1.3 `role`/`proto` hints and a companion kind-39698 `a` pointer are
+forward-compatible optional tags: this relay accepts them without rejecting
+the observation, but does not yet expose them as dedicated OpenSearch fields
+or capability-directory results. Kind 39698 is not a special SIP-01 document
+index in this relay.
 
 **Provenance tiers**: timestamps are indexed with their trust level
 explicit — `published_at` is the page's own claim, `observed_at`
